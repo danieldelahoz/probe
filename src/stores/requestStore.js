@@ -8,12 +8,14 @@ export const useRequestStore = create((set, get) => ({
   url: 'https://jsonplaceholder.typicode.com/users/1',
   params: [emptyRow()],
   headers: [emptyRow()],
+  body: { type: 'none', content: '' },
   response: null,
   error: null,
   isLoading: false,
 
   setMethod: (method) => set({ method }),
   setUrl: (url) => set({ url }),
+  setBody: (body) => set({ body }),
 
   addParam: () => set((s) => ({ params: [...s.params, emptyRow()] })),
   updateParam: (id, patch) => set((s) => ({
@@ -32,7 +34,7 @@ export const useRequestStore = create((set, get) => ({
   })),
 
   send: async () => {
-    const { method, url, params, headers } = get()
+    const { method, url, params, headers, body } = get()
     if (!url.trim()) {
       set({ error: { type: 'invalidUrl', message: 'URL is required', hint: 'Enter a URL to send a request' } })
       return
@@ -45,7 +47,12 @@ export const useRequestStore = create((set, get) => ({
 
     const t0 = performance.now()
     try {
-      const res = await fetch(finalUrl, { method, headers: finalHeaders })
+      const fetchOptions = { method, headers: finalHeaders }
+      const bodyContent = buildBody(body, finalHeaders)
+      if (bodyContent !== null) {
+        fetchOptions.body = bodyContent
+      }
+      const res = await fetch(finalUrl, fetchOptions)
       const text = await res.text()
       const durationMs = Math.round(performance.now() - t0)
       const sizeBytes = new Blob([text]).size
@@ -103,4 +110,23 @@ function buildHeaders(headers) {
     .filter((h) => h.enabled && h.key.trim())
     .forEach((h) => { result[h.key] = h.value })
   return result
+
+  
+}
+
+function buildBody(body, headers) {
+  if (body.type === 'none' || !body.content.trim()) return null
+
+  if (body.type === 'json') {
+    if (!headers['Content-Type'] && !headers['content-type']) {
+      headers['Content-Type'] = 'application/json'
+    }
+    return body.content
+  }
+
+  if (body.type === 'text') {
+    return body.content
+  }
+
+  return null
 }

@@ -2,10 +2,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useRequestStore } from '@/stores/requestStore'
 import UrlBar from '@/components/UrlBar'
 import KeyValueEditor from '@/components/KeyValueEditor'
+import BodyEditor from '@/components/BodyEditor'
 
 export default function RequestPanel() {
   const params = useRequestStore((s) => s.params)
   const headers = useRequestStore((s) => s.headers)
+  const body = useRequestStore((s) => s.body)
   const addParam = useRequestStore((s) => s.addParam)
   const updateParam = useRequestStore((s) => s.updateParam)
   const removeParam = useRequestStore((s) => s.removeParam)
@@ -13,6 +15,7 @@ export default function RequestPanel() {
   const updateHeader = useRequestStore((s) => s.updateHeader)
   const removeHeader = useRequestStore((s) => s.removeHeader)
 
+  
   const enabledParamCount = params.filter((p) => p.enabled && p.key.trim()).length
   const enabledHeaderCount = headers.filter((h) => h.enabled && h.key.trim()).length
 
@@ -27,7 +30,9 @@ export default function RequestPanel() {
           <TabsTrigger value="headers">
             Headers {enabledHeaderCount > 0 && <span className="ml-1 text-xs text-muted-foreground">({enabledHeaderCount})</span>}
           </TabsTrigger>
-          <TabsTrigger value="body" disabled>Body</TabsTrigger>
+          <TabsTrigger value="body">
+  Body {body.type !== 'none' && <span className="ml-1 text-xs text-muted-foreground">●</span>}
+</TabsTrigger>
           <TabsTrigger value="auth" disabled>Auth</TabsTrigger>
         </TabsList>
         <TabsContent value="params" className="mt-4">
@@ -50,6 +55,9 @@ export default function RequestPanel() {
             valuePlaceholder="Value"
           />
         </TabsContent>
+        <TabsContent value="body" className="mt-4">
+  <BodyEditor />
+</TabsContent>
       </Tabs>
     </section>
   )
