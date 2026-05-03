@@ -14,7 +14,6 @@ export function saveJSON(key, value) {
   try {
     localStorage.setItem(PREFIX + key, JSON.stringify(value))
   } catch {
-    // localStorage full or disabled — fail silently
   }
 }
 
@@ -22,6 +21,5 @@ export function removeKey(key) {
   try {
     localStorage.removeItem(PREFIX + key)
   } catch {
-    // ignore
   }
 }
