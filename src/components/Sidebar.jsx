@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useEnvStore } from '@/stores/envStore'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
@@ -10,14 +10,20 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import EnvironmentEditor from '@/components/EnvironmentEditor'
-import { GearSix } from '@phosphor-icons/react'
 import HistoryList from '@/components/HistoryList'
+import { GearSix } from '@phosphor-icons/react'
 
 export default function Sidebar() {
   const environments = useEnvStore((s) => s.environments)
   const activeId = useEnvStore((s) => s.activeId)
   const setActive = useEnvStore((s) => s.setActive)
   const [editorOpen, setEditorOpen] = useState(false)
+
+  useEffect(() => {
+    const handler = () => setEditorOpen(true)
+    window.addEventListener('probe:open-env-editor', handler)
+    return () => window.removeEventListener('probe:open-env-editor', handler)
+  }, [])
 
   return (
     <>
@@ -32,7 +38,7 @@ export default function Sidebar() {
               size="icon"
               className="h-6 w-6"
               onClick={() => setEditorOpen(true)}
-              title="Edit environments"
+              title="Edit environments (⌘/)"
             >
               <GearSix size={12} />
             </Button>
@@ -58,12 +64,12 @@ export default function Sidebar() {
           )}
         </div>
         <Separator />
-<div className="p-4 flex-1 overflow-y-auto">
-  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-    History
-  </p>
-  <HistoryList />
-</div>
+        <div className="p-4 flex-1 overflow-y-auto">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+            History
+          </p>
+          <HistoryList />
+        </div>
       </aside>
 
       <EnvironmentEditor open={editorOpen} onOpenChange={setEditorOpen} />
