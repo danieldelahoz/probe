@@ -24,15 +24,20 @@ export default function KeyValueEditor({ rows, onAdd, onUpdate, onRemove, keyPla
             placeholder={valuePlaceholder}
             className="flex-1 font-mono text-sm"
           />
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onRemove(row.id)}
-            disabled={rows.length === 1}
-            className="shrink-0"
-          >
-            <X size={14} />
-          </Button>
+<Button
+  variant="ghost"
+  size="icon"
+  onClick={() => {
+    if (rows.length === 1) {
+      onUpdate(row.id, { key: '', value: '', enabled: true })
+    } else {
+      onRemove(row.id)
+    }
+  }}
+  className="shrink-0"
+>
+  <X size={14} />
+</Button>
         </div>
       ))}
       <Button variant="outline" size="sm" onClick={onAdd} className="gap-2">
