@@ -3,6 +3,7 @@ import { useRequestStore } from '@/stores/requestStore'
 import Sidebar from '@/components/Sidebar'
 import RequestPanel from '@/components/RequestPanel'
 import ResponsePanel from '@/components/ResponsePanel'
+import { useEnvStore } from '@/stores/envStore'
 
 function App() {
   const send = useRequestStore((s) => s.send)
@@ -22,9 +23,7 @@ function App() {
     <div className="h-screen flex flex-col bg-background text-foreground">
       <header className="border-b px-4 py-2 flex items-center justify-between shrink-0">
         <span className="font-semibold">Probe</span>
-        <span className="text-xs text-muted-foreground border px-2 py-0.5 rounded">
-          env: none
-        </span>
+<ActiveEnvBadge />
       </header>
       <main className="flex flex-1 min-h-0">
         <Sidebar />
@@ -34,6 +33,16 @@ function App() {
         </div>
       </main>
     </div>
+  )
+}
+function ActiveEnvBadge() {
+  const environments = useEnvStore((s) => s.environments)
+  const activeId = useEnvStore((s) => s.activeId)
+  const active = environments.find((e) => e.id === activeId)
+  return (
+    <span className="text-xs text-muted-foreground border px-2 py-0.5 rounded">
+      env: {active ? active.name : 'none'}
+    </span>
   )
 }
 

@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import { nanoid } from 'nanoid'
 import { loadJSON, saveJSON } from '@/lib/storage'
+import { getResolvedVars } from '@/stores/envStore'
+import { interpolate } from '@/lib/interpolate'
 
 const PERSIST_KEY = 'oauth2-tokens'
 
@@ -75,13 +77,43 @@ export const useRequestStore = create((set, get) => ({
       return
     }
 
-    const finalUrl = buildUrlWithParams(url, params, auth)
-    const finalHeaders = buildHeaders(headers)
+    const vars = getResolvedVars()
+    const interpolatedUrl = interpolate(url, vars)
+    const interpolatedHeaders = headers.map((h) => ({
+      ...h,
+      value: interpolate(h.value, vars),
+    }))
+    const interpolatedParams = params.map((p) => ({
+      ...p,
+      value: interpolate(p.value, vars),
+    }))
+    const interpolatedBody = {
+      ...body,
+      content: interpolate(body.content, vars),
+    }
+    const interpolatedAuth = interpolateAuth(auth, vars)
+
+    const unresolvedMatch = interpolatedUrl.match(/\{\{([^{}]+)\}\}/)
+    if (unresolvedMatch) {
+      set({
+        error: {
+          type: 'unresolvedVariable',
+          message: `Unresolved variable: {{${unresolvedMatch[1].trim()}}}`,
+          hint: 'Check that the variable is defined in your active environment, or that an environment is selected.',
+          durationMs: 0,
+        },
+        isLoading: false,
+      })
+      return
+    }
+
+    const finalUrl = buildUrlWithParams(interpolatedUrl, interpolatedParams, interpolatedAuth)
+    const finalHeaders = buildHeaders(interpolatedHeaders)
 
     set({ isLoading: true, response: null, error: null })
 
     try {
-      await applyAuth(auth, finalHeaders, (oauth2Update) => {
+      await applyAuth(interpolatedAuth, finalHeaders, (oauth2Update) => {
         set((s) => ({ auth: { ...s.auth, oauth2: { ...s.auth.oauth2, ...oauth2Update } } }))
       })
     } catch (err) {
@@ -98,7 +130,7 @@ export const useRequestStore = create((set, get) => ({
     }
 
     const fetchOptions = { method, headers: finalHeaders }
-    const bodyContent = buildBody(body, finalHeaders)
+    const bodyContent = buildBody(interpolatedBody, finalHeaders)
     if (bodyContent !== null) {
       fetchOptions.body = bodyContent
     }
@@ -191,6 +223,29 @@ function buildBody(body, headers) {
   }
 
   return null
+}
+
+function interpolateAuth(auth, vars) {
+  return {
+    ...auth,
+    bearer: { token: interpolate(auth.bearer.token, vars) },
+    basic: {
+      username: interpolate(auth.basic.username, vars),
+      password: interpolate(auth.basic.password, vars),
+    },
+    apiKey: {
+      ...auth.apiKey,
+      key: interpolate(auth.apiKey.key, vars),
+      value: interpolate(auth.apiKey.value, vars),
+    },
+    oauth2: {
+      ...auth.oauth2,
+      tokenUrl: interpolate(auth.oauth2.tokenUrl, vars),
+      clientId: interpolate(auth.oauth2.clientId, vars),
+      clientSecret: interpolate(auth.oauth2.clientSecret, vars),
+      scope: interpolate(auth.oauth2.scope, vars),
+    },
+  }
 }
 
 async function applyAuth(auth, headers, updateOauth2State) {
