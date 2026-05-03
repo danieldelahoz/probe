@@ -1,7 +1,8 @@
 import { create } from 'zustand'
 import { nanoid } from 'nanoid'
 import { loadJSON, saveJSON } from '@/lib/storage'
-import { getResolvedVars } from '@/stores/envStore'
+import { getResolvedVars, useEnvStore } from '@/stores/envStore'
+import { useHistoryStore } from '@/stores/historyStore'
 import { interpolate } from '@/lib/interpolate'
 
 const PERSIST_KEY = 'oauth2-tokens'
@@ -35,6 +36,17 @@ export const useRequestStore = create((set, get) => ({
   setMethod: (method) => set({ method }),
   setUrl: (url) => set({ url }),
   setBody: (body) => set({ body }),
+
+  loadFromHistory: (snapshot) => set({
+    method: snapshot.method,
+    url: snapshot.url,
+    params: snapshot.params,
+    headers: snapshot.headers,
+    body: snapshot.body,
+    auth: snapshot.auth,
+    response: null,
+    error: null,
+  }),
 
   setAuthType: (type) => set((s) => {
     if (type === 'oauth2') {
@@ -157,6 +169,15 @@ export const useRequestStore = create((set, get) => ({
         },
         isLoading: false,
       })
+
+      useHistoryStore.getState().addEntry({
+        method,
+        url: finalUrl,
+        status: res.status,
+        durationMs,
+        envName: getActiveEnvName(),
+        snapshot: { method, url, params, headers, body, auth },
+      })
     } catch (err) {
       const durationMs = Math.round(performance.now() - t0)
       const isCors = err.message.includes('Failed to fetch') || err.message.includes('NetworkError')
@@ -171,6 +192,15 @@ export const useRequestStore = create((set, get) => ({
           durationMs,
         },
         isLoading: false,
+      })
+
+      useHistoryStore.getState().addEntry({
+        method,
+        url: finalUrl,
+        status: null,
+        durationMs,
+        envName: getActiveEnvName(),
+        snapshot: { method, url, params, headers, body, auth },
       })
     }
   },
@@ -340,4 +370,10 @@ function restoreOAuth2(tokenUrl, clientId) {
   if (!tokenUrl || !clientId) return { cachedToken: null, expiresAt: null }
   const all = loadJSON(PERSIST_KEY, {})
   return all[`${tokenUrl}::${clientId}`] || { cachedToken: null, expiresAt: null }
+}
+
+function getActiveEnvName() {
+  const { environments, activeId } = useEnvStore.getState()
+  const active = environments.find((e) => e.id === activeId)
+  return active?.name || null
 }

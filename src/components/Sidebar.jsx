@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/select'
 import EnvironmentEditor from '@/components/EnvironmentEditor'
 import { GearSix } from '@phosphor-icons/react'
+import HistoryList from '@/components/HistoryList'
 
 export default function Sidebar() {
   const environments = useEnvStore((s) => s.environments)
@@ -57,12 +58,12 @@ export default function Sidebar() {
           )}
         </div>
         <Separator />
-        <div className="p-4 flex-1 overflow-y-auto">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-            History
-          </p>
-          <p className="text-sm text-muted-foreground italic">No requests yet</p>
-        </div>
+<div className="p-4 flex-1 overflow-y-auto">
+  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+    History
+  </p>
+  <HistoryList />
+</div>
       </aside>
 
       <EnvironmentEditor open={editorOpen} onOpenChange={setEditorOpen} />
