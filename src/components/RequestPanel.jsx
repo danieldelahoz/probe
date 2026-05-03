@@ -3,11 +3,13 @@ import { useRequestStore } from '@/stores/requestStore'
 import UrlBar from '@/components/UrlBar'
 import KeyValueEditor from '@/components/KeyValueEditor'
 import BodyEditor from '@/components/BodyEditor'
+import AuthEditor from '@/components/AuthEditor'
 
 export default function RequestPanel() {
   const params = useRequestStore((s) => s.params)
   const headers = useRequestStore((s) => s.headers)
   const body = useRequestStore((s) => s.body)
+  const auth = useRequestStore((s) => s.auth)
   const addParam = useRequestStore((s) => s.addParam)
   const updateParam = useRequestStore((s) => s.updateParam)
   const removeParam = useRequestStore((s) => s.removeParam)
@@ -33,7 +35,9 @@ export default function RequestPanel() {
           <TabsTrigger value="body">
   Body {body.type !== 'none' && <span className="ml-1 text-xs text-muted-foreground">●</span>}
 </TabsTrigger>
-          <TabsTrigger value="auth" disabled>Auth</TabsTrigger>
+          <TabsTrigger value="auth">
+  Auth {auth.type !== 'none' && <span className="ml-1 text-xs text-muted-foreground">●</span>}
+</TabsTrigger>
         </TabsList>
         <TabsContent value="params" className="mt-4">
           <KeyValueEditor
@@ -57,6 +61,9 @@ export default function RequestPanel() {
         </TabsContent>
         <TabsContent value="body" className="mt-4">
   <BodyEditor />
+</TabsContent>
+<TabsContent value="auth" className="mt-4">
+  <AuthEditor />
 </TabsContent>
       </Tabs>
     </section>
