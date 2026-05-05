@@ -9,9 +9,9 @@ const PERSIST_KEY = 'oauth2-tokens'
 
 const emptyRow = () => ({ id: nanoid(), key: '', value: '', enabled: true })
 
-export const useRequestStore = create((set, get) => ({
+const defaultState = () => ({
   method: 'GET',
-  url: 'https://jsonplaceholder.typicode.com/users/1',
+  url: '',
   params: [emptyRow()],
   headers: [emptyRow()],
   body: { type: 'none', content: '' },
@@ -32,10 +32,17 @@ export const useRequestStore = create((set, get) => ({
   response: null,
   error: null,
   isLoading: false,
+})
+
+export const useRequestStore = create((set, get) => ({
+  ...defaultState(),
+  url: 'https://jsonplaceholder.typicode.com/users/1',
 
   setMethod: (method) => set({ method }),
   setUrl: (url) => set({ url }),
   setBody: (body) => set({ body }),
+
+  reset: () => set(defaultState()),
 
   loadFromHistory: (snapshot) => set({
     method: snapshot.method,

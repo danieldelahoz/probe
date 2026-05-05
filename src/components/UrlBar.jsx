@@ -20,6 +20,7 @@ export default function UrlBar() {
   const setMethod = useRequestStore((s) => s.setMethod)
   const setUrl = useRequestStore((s) => s.setUrl)
   const send = useRequestStore((s) => s.send)
+  const reset = useRequestStore((s) => s.reset)
 
   const environments = useEnvStore((s) => s.environments)
   const activeId = useEnvStore((s) => s.activeId)
@@ -34,6 +35,8 @@ export default function UrlBar() {
   const interpolated = interpolate(url, vars)
   const showPreview = url.includes('{{') && interpolated !== url
 
+  const canSend = url.trim().length > 0 && !isLoading
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') send()
   }
@@ -41,6 +44,14 @@ export default function UrlBar() {
   return (
     <div>
       <div className="flex gap-2">
+        <Button
+          variant="outline"
+          onClick={reset}
+          title="New request (clear all fields)"
+        >
+          New
+        </Button>
+
         <Select value={method} onValueChange={setMethod}>
           <SelectTrigger className="w-[100px]">
             <SelectValue />
@@ -62,12 +73,12 @@ export default function UrlBar() {
           className="flex-1 font-mono"
         />
 
-        <Button onClick={send} disabled={isLoading} className="min-w-[80px]">
+        <Button onClick={send} disabled={!canSend} className="min-w-[80px]">
           {isLoading ? 'Sending…' : 'Send'}
         </Button>
       </div>
       {showPreview && (
-        <div className="text-xs text-muted-foreground mt-1.5 font-mono pl-[108px] truncate">
+        <div className="text-xs text-muted-foreground mt-1.5 font-mono pl-[180px] truncate">
           → {interpolated}
         </div>
       )}
