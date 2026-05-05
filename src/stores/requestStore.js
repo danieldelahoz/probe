@@ -6,6 +6,7 @@ import { useHistoryStore } from '@/stores/historyStore'
 import { interpolate } from '@/lib/interpolate'
 
 const PERSIST_KEY = 'oauth2-tokens'
+const URL_PERSIST_KEY = 'last-request'
 
 const emptyRow = () => ({ id: nanoid(), key: '', value: '', enabled: true })
 
@@ -34,15 +35,31 @@ const defaultState = () => ({
   isLoading: false,
 })
 
+const persistedRequest = loadJSON(URL_PERSIST_KEY, null)
+
+const initialState = () => {
+  const base = defaultState()
+  if (persistedRequest && persistedRequest.url) {
+    base.url = persistedRequest.url
+    base.method = persistedRequest.method || 'GET'
+  } else {
+    base.url = 'https://jsonplaceholder.typicode.com/users/1'
+  }
+  return base
+}
+
 export const useRequestStore = create((set, get) => ({
-  ...defaultState(),
-  url: 'https://jsonplaceholder.typicode.com/users/1',
+  ...initialState(),
 
   setMethod: (method) => set({ method }),
   setUrl: (url) => set({ url }),
   setBody: (body) => set({ body }),
 
-  reset: () => set(defaultState()),
+  reset: () => {
+    const fresh = defaultState()
+    fresh.url = 'https://jsonplaceholder.typicode.com/users/1'
+    set(fresh)
+  },
 
   loadFromHistory: (snapshot) => set({
     method: snapshot.method,
@@ -216,6 +233,9 @@ export const useRequestStore = create((set, get) => ({
 useRequestStore.subscribe((state, prev) => {
   if (state.auth.oauth2 !== prev?.auth?.oauth2) {
     persistOAuth2State(state.auth.oauth2)
+  }
+  if (state.url !== prev?.url || state.method !== prev?.method) {
+    saveJSON(URL_PERSIST_KEY, { url: state.url, method: state.method })
   }
 })
 
