@@ -14,8 +14,23 @@ export const useHistoryStore = create((set) => ({
     const newEntry = {
       id: nanoid(),
       timestamp: new Date().toISOString(),
+      count: 1,
       ...entry,
     }
+
+    const top = s.entries[0]
+    const isDupOfTop = top
+      && top.method === newEntry.method
+      && top.url === newEntry.url
+
+    if (isDupOfTop) {
+      const updated = [
+        { ...newEntry, id: top.id, count: (top.count || 1) + 1 },
+        ...s.entries.slice(1),
+      ]
+      return { entries: updated }
+    }
+
     const next = [newEntry, ...s.entries].slice(0, MAX_ENTRIES)
     return { entries: next }
   }),

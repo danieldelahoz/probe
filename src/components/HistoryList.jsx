@@ -46,6 +46,11 @@ export default function HistoryList() {
                 {entry.envName}
               </span>
             )}
+            {entry.count > 1 && (
+              <span className="text-muted-foreground text-[10px] px-1.5 py-0.5 bg-muted rounded font-medium">
+                ×{entry.count}
+              </span>
+            )}
             <span className="text-muted-foreground ml-auto">{entry.durationMs}ms</span>
           </div>
           <div className="text-xs text-muted-foreground truncate mt-0.5 font-mono">
