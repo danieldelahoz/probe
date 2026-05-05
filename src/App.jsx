@@ -32,19 +32,22 @@ function App() {
   }, [send])
 
   return (
-    <div className="h-screen flex flex-col bg-background text-foreground">
-      <header className="border-b px-4 py-2 flex items-center justify-between shrink-0">
-        <span className="font-semibold">Probe</span>
-        <ActiveEnvBadge />
-      </header>
-      <main className="flex flex-1 min-h-0">
-        <Sidebar />
-        <div className="flex flex-col flex-1 min-w-0">
-          <RequestPanel />
-          <ResponsePanel />
-        </div>
-      </main>
-    </div>
+    <>
+      <DesktopOnly />
+      <div className="h-screen flex flex-col bg-background text-foreground">
+        <header className="border-b px-4 py-2 flex items-center justify-between shrink-0">
+          <span className="font-semibold">Probe</span>
+          <ActiveEnvBadge />
+        </header>
+        <main className="flex flex-1 min-h-0">
+          <Sidebar />
+          <div className="flex flex-col flex-1 min-w-0">
+            <RequestPanel />
+            <ResponsePanel />
+          </div>
+        </main>
+      </div>
+    </>
   )
 }
 
@@ -56,6 +59,22 @@ function ActiveEnvBadge() {
     <span className="text-xs text-muted-foreground border px-2 py-0.5 rounded">
       env: {active ? active.name : 'none'}
     </span>
+  )
+}
+
+function DesktopOnly() {
+  return (
+    <div className="md:hidden fixed inset-0 z-50 bg-background flex items-center justify-center p-6">
+      <div className="text-center space-y-4 max-w-sm">
+        <div className="text-2xl font-semibold">Probe</div>
+        <p className="text-muted-foreground text-sm">
+          Probe is a developer tool built for desktop. Open it on a laptop or larger screen for the full experience.
+        </p>
+        <p className="text-xs text-muted-foreground">
+          probe.danield.dev
+        </p>
+      </div>
+    </div>
   )
 }
 

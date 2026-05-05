@@ -144,4 +144,27 @@
     outline: 2px solid hsl(var(--ring));
     outline-offset: 2px;
   }
+  /* Always-visible thin scrollbar for scrollable panes */
+.probe-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.probe-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.probe-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 4px;
+}
+
+.probe-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+.probe-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) transparent;
+}
 }
