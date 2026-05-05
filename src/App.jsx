@@ -39,7 +39,12 @@ function App() {
       <DesktopOnly />
       <div className="h-screen flex flex-col bg-background text-foreground">
         <header className="border-b px-4 py-2 flex items-center justify-between shrink-0">
-          <span className="font-semibold">Probe</span>
+          <div className="flex items-center gap-3">
+            <span className="font-semibold">Probe</span>
+            <span className="text-xs text-muted-foreground">
+              Created by <a href="https://danield.dev" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">danield.dev</a>
+            </span>
+          </div>
           <div className="flex items-center gap-3">
             <ThemeToggle />
             <ActiveEnvBadge />
