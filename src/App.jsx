@@ -1,9 +1,12 @@
 import { useEffect } from 'react'
 import { useRequestStore } from '@/stores/requestStore'
 import { useEnvStore } from '@/stores/envStore'
+import { useThemeStore } from '@/stores/themeStore'
 import Sidebar from '@/components/Sidebar'
 import RequestPanel from '@/components/RequestPanel'
 import ResponsePanel from '@/components/ResponsePanel'
+import { Button } from '@/components/ui/button'
+import { Sun, Moon } from '@phosphor-icons/react'
 
 function App() {
   const send = useRequestStore((s) => s.send)
@@ -37,7 +40,10 @@ function App() {
       <div className="h-screen flex flex-col bg-background text-foreground">
         <header className="border-b px-4 py-2 flex items-center justify-between shrink-0">
           <span className="font-semibold">Probe</span>
-          <ActiveEnvBadge />
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <ActiveEnvBadge />
+          </div>
         </header>
         <main className="flex flex-1 min-h-0">
           <Sidebar />
@@ -48,6 +54,24 @@ function App() {
         </main>
       </div>
     </>
+  )
+}
+
+function ThemeToggle() {
+  const theme = useThemeStore((s) => s.theme)
+  const toggleTheme = useThemeStore((s) => s.toggleTheme)
+  const isDark = theme === 'dark'
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={toggleTheme}
+      className="h-7 w-7"
+      title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+    >
+      {isDark ? <Sun size={14} /> : <Moon size={14} />}
+    </Button>
   )
 }
 
