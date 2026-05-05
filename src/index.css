@@ -122,4 +122,26 @@
   html {
     @apply font-mono;
   }
+
+  /* Show pointer cursor on all interactive elements */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="tab"],
+  [role="option"],
+  [role="menuitem"],
+  a {
+    cursor: pointer;
+  }
+
+  /* Visible focus ring for keyboard navigation */
+  button:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible,
+  [role="button"]:focus-visible,
+  [role="tab"]:focus-visible,
+  [role="option"]:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
 }
