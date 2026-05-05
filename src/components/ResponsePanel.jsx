@@ -1,4 +1,8 @@
+import { useState, useRef, useEffect } from 'react'
 import { useRequestStore } from '@/stores/requestStore'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { MagnifyingGlass, X } from '@phosphor-icons/react'
 
 export default function ResponsePanel() {
   const response = useRequestStore((s) => s.response)
@@ -55,20 +59,119 @@ function ResponseDisplay({ response }) {
   const displayBody = isJson ? prettyJson(response.body) : response.body
   const statusKind = getStatusKind(response.status)
 
+  const [search, setSearch] = useState('')
+  const searchInputRef = useRef(null)
+
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+        const target = e.target
+        if (target?.closest && target.closest('[data-response-panel]')) {
+          e.preventDefault()
+          searchInputRef.current?.focus()
+          searchInputRef.current?.select()
+        }
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
+
+  const matchCount = search ? countMatches(displayBody, search) : 0
+  const highlightedBody = search ? highlightMatches(displayBody, search) : null
+
   return (
-    <section className="flex-1 p-4 flex flex-col min-h-0">
+    <section
+      className="flex-1 p-4 flex flex-col min-h-0"
+      data-response-panel
+    >
       <div className="flex gap-4 mb-3 text-sm items-center">
         <span className={`px-2 py-0.5 rounded font-medium ${statusKind.classes}`}>
           {response.status} {response.statusText}
         </span>
         <span className="text-muted-foreground">{response.durationMs} ms</span>
         <span className="text-muted-foreground">{formatBytes(response.sizeBytes)}</span>
+
+        <div className="ml-auto flex items-center gap-2 max-w-md flex-1">
+          <div className="relative flex-1">
+            <MagnifyingGlass
+              size={14}
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+            />
+            <Input
+              ref={searchInputRef}
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search response…"
+              className="pl-8 pr-8 h-8 text-xs font-mono"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                title="Clear search"
+              >
+                <X size={12} />
+              </button>
+            )}
+          </div>
+          {search && (
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
+              {matchCount} {matchCount === 1 ? 'match' : 'matches'}
+            </span>
+          )}
+        </div>
       </div>
-      <pre className="bg-muted/30 rounded p-4 text-xs overflow-auto flex-1 whitespace-pre-wrap break-words">
-        {displayBody}
+
+      <pre className="bg-muted/30 rounded p-4 text-xs overflow-auto probe-scrollbar flex-1 whitespace-pre-wrap break-words">
+        {highlightedBody || displayBody}
       </pre>
     </section>
   )
+}
+
+function countMatches(text, query) {
+  if (!query) return 0
+  const lowerText = text.toLowerCase()
+  const lowerQuery = query.toLowerCase()
+  let count = 0
+  let pos = 0
+  while ((pos = lowerText.indexOf(lowerQuery, pos)) !== -1) {
+    count++
+    pos += lowerQuery.length
+  }
+  return count
+}
+
+function highlightMatches(text, query) {
+  if (!query) return text
+  const lowerText = text.toLowerCase()
+  const lowerQuery = query.toLowerCase()
+  const result = []
+  let lastIndex = 0
+  let pos = 0
+
+  while ((pos = lowerText.indexOf(lowerQuery, lastIndex)) !== -1) {
+    if (pos > lastIndex) {
+      result.push(text.slice(lastIndex, pos))
+    }
+    result.push(
+      <mark
+        key={pos}
+        className="bg-amber-200 dark:bg-amber-700/50 text-foreground rounded-sm px-0.5"
+      >
+        {text.slice(pos, pos + query.length)}
+      </mark>
+    )
+    lastIndex = pos + query.length
+  }
+
+  if (lastIndex < text.length) {
+    result.push(text.slice(lastIndex))
+  }
+
+  return result
 }
 
 function getStatusKind(status) {
