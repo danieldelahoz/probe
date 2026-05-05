@@ -1,11 +1,19 @@
+import { useState } from 'react'
 import { useHistoryStore } from '@/stores/historyStore'
-import { useRequestStore } from '@/stores/requestStore'
 import { Button } from '@/components/ui/button'
+import HistoryDetail from '@/components/HistoryDetail'
 
 export default function HistoryList() {
   const entries = useHistoryStore((s) => s.entries)
   const clearAll = useHistoryStore((s) => s.clearAll)
-  const loadFromHistory = useRequestStore((s) => s.loadFromHistory)
+
+  const [selectedEntry, setSelectedEntry] = useState(null)
+  const [detailOpen, setDetailOpen] = useState(false)
+
+  const openDetail = (entry) => {
+    setSelectedEntry(entry)
+    setDetailOpen(true)
+  }
 
   if (entries.length === 0) {
     return (
@@ -14,51 +22,59 @@ export default function HistoryList() {
   }
 
   return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs text-muted-foreground">
-          {entries.length} {entries.length === 1 ? 'entry' : 'entries'}
-        </span>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={clearAll}
-          className="h-6 text-xs"
-        >
-          Clear
-        </Button>
+    <>
+      <div className="space-y-1">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs text-muted-foreground">
+            {entries.length} {entries.length === 1 ? 'entry' : 'entries'}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={clearAll}
+            className="h-6 text-xs"
+          >
+            Clear
+          </Button>
+        </div>
+        {entries.map((entry) => (
+          <button
+            key={entry.id}
+            onClick={() => openDetail(entry)}
+            className="w-full text-left p-2 rounded hover:bg-muted/50 transition-colors group"
+          >
+            <div className="flex items-center gap-2 text-xs">
+              <span className={`font-medium ${methodColor(entry.method)}`}>
+                {entry.method}
+              </span>
+              <span className={`font-medium ${statusColor(entry.status)}`}>
+                {entry.status ?? '—'}
+              </span>
+              {entry.envName && (
+                <span className="text-muted-foreground text-[10px] px-1.5 py-0.5 bg-muted rounded">
+                  {entry.envName}
+                </span>
+              )}
+              {entry.count > 1 && (
+                <span className="text-muted-foreground text-[10px] px-1.5 py-0.5 bg-muted rounded font-medium">
+                  ×{entry.count}
+                </span>
+              )}
+              <span className="text-muted-foreground ml-auto">{entry.durationMs}ms</span>
+            </div>
+            <div className="text-xs text-muted-foreground truncate mt-0.5 font-mono">
+              {shortenUrl(entry.url)}
+            </div>
+          </button>
+        ))}
       </div>
-      {entries.map((entry) => (
-        <button
-          key={entry.id}
-          onClick={() => loadFromHistory(entry.snapshot)}
-          className="w-full text-left p-2 rounded hover:bg-muted/50 transition-colors group"
-        >
-          <div className="flex items-center gap-2 text-xs">
-            <span className={`font-medium ${methodColor(entry.method)}`}>
-              {entry.method}
-            </span>
-            <span className={`font-medium ${statusColor(entry.status)}`}>
-              {entry.status ?? '—'}
-            </span>
-            {entry.envName && (
-              <span className="text-muted-foreground text-[10px] px-1.5 py-0.5 bg-muted rounded">
-                {entry.envName}
-              </span>
-            )}
-            {entry.count > 1 && (
-              <span className="text-muted-foreground text-[10px] px-1.5 py-0.5 bg-muted rounded font-medium">
-                ×{entry.count}
-              </span>
-            )}
-            <span className="text-muted-foreground ml-auto">{entry.durationMs}ms</span>
-          </div>
-          <div className="text-xs text-muted-foreground truncate mt-0.5 font-mono">
-            {shortenUrl(entry.url)}
-          </div>
-        </button>
-      ))}
-    </div>
+
+      <HistoryDetail
+        entry={selectedEntry}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+      />
+    </>
   )
 }
 

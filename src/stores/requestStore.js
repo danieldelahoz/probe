@@ -7,6 +7,7 @@ import { interpolate } from '@/lib/interpolate'
 
 const PERSIST_KEY = 'oauth2-tokens'
 const URL_PERSIST_KEY = 'last-request'
+const MAX_HISTORY_BODY_BYTES = 100_000
 
 const emptyRow = () => ({ id: nanoid(), key: '', value: '', enabled: true })
 
@@ -181,18 +182,17 @@ export const useRequestStore = create((set, get) => ({
       const responseHeaders = {}
       res.headers.forEach((value, key) => { responseHeaders[key] = value })
 
-      set({
-        response: {
-          status: res.status,
-          statusText: res.statusText,
-          headers: responseHeaders,
-          body: text,
-          contentType: responseHeaders['content-type'] || '',
-          durationMs,
-          sizeBytes,
-        },
-        isLoading: false,
-      })
+      const fullResponse = {
+        status: res.status,
+        statusText: res.statusText,
+        headers: responseHeaders,
+        body: text,
+        contentType: responseHeaders['content-type'] || '',
+        durationMs,
+        sizeBytes,
+      }
+
+      set({ response: fullResponse, isLoading: false })
 
       useHistoryStore.getState().addEntry({
         method,
@@ -201,22 +201,22 @@ export const useRequestStore = create((set, get) => ({
         durationMs,
         envName: getActiveEnvName(),
         snapshot: { method, url, params, headers, body, auth },
+        responseSnapshot: truncateResponse(fullResponse),
       })
     } catch (err) {
       const durationMs = Math.round(performance.now() - t0)
       const isCors = err.message.includes('Failed to fetch') || err.message.includes('NetworkError')
 
-      set({
-        error: {
-          type: isCors ? 'cors' : 'network',
-          message: err.message,
-          hint: isCors
-            ? "Likely CORS — the API didn't allow this origin. See the README for workarounds."
-            : 'Check the URL, your network connection, and the protocol (http/https).',
-          durationMs,
-        },
-        isLoading: false,
-      })
+      const errorInfo = {
+        type: isCors ? 'cors' : 'network',
+        message: err.message,
+        hint: isCors
+          ? "Likely CORS — the API didn't allow this origin. See the README for workarounds."
+          : 'Check the URL, your network connection, and the protocol (http/https).',
+        durationMs,
+      }
+
+      set({ error: errorInfo, isLoading: false })
 
       useHistoryStore.getState().addEntry({
         method,
@@ -225,6 +225,7 @@ export const useRequestStore = create((set, get) => ({
         durationMs,
         envName: getActiveEnvName(),
         snapshot: { method, url, params, headers, body, auth },
+        errorSnapshot: errorInfo,
       })
     }
   },
@@ -238,6 +239,23 @@ useRequestStore.subscribe((state, prev) => {
     saveJSON(URL_PERSIST_KEY, { url: state.url, method: state.method })
   }
 })
+
+function truncateResponse(response) {
+  if (!response) return null
+  const truncated = response.body.length > MAX_HISTORY_BODY_BYTES
+  return {
+    status: response.status,
+    statusText: response.statusText,
+    headers: response.headers,
+    body: truncated
+      ? response.body.slice(0, MAX_HISTORY_BODY_BYTES)
+      : response.body,
+    bodyTruncated: truncated,
+    contentType: response.contentType,
+    durationMs: response.durationMs,
+    sizeBytes: response.sizeBytes,
+  }
+}
 
 function buildUrlWithParams(url, params, auth) {
   const enabledParams = params.filter((p) => p.enabled && p.key.trim())
