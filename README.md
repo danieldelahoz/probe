@@ -15,9 +15,9 @@ Runs entirely in your browser. No account, no backend, no telemetry. Your data s
 
 ## Why I built it
 
-Spent five years as a TSE working with enterprise IAM, SSO, and REST APIs. Got tired of fighting tools that wanted me to log in, sync to a workspace, or upgrade to a team plan to test three endpoints.
+Spent 5 years doing enterprise SaaS support. I lived in Postman every day, and honestly got tired of API tools wanting me to log in or upgrade to a team plan just to test a few endpoints.
 
-So I built one that just works.
+So I built my own, with help from Claude.
 
 ## A note on secrets
 
@@ -27,7 +27,7 @@ It is **not** appropriate for storing production credentials or testing APIs you
 
 This is intentional. Adding encryption-at-rest in localStorage would provide false security, since the encryption key would have to live in localStorage too. Anyone with access to your browser session has access to either form.
 
-For a tool intended for personal API exploration, plaintext storage with clear documentation is the honest tradeoff. For team use or production credentials, use a tool with proper secret management.
+For team use or production credentials, use a tool with proper secret management.
 
 ## Tech
 
