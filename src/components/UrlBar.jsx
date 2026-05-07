@@ -63,7 +63,7 @@ export default function UrlBar() {
     }
   }
 
-  return (
+return (
     <div>
       <div className="flex gap-2">
         <Button
@@ -85,15 +85,22 @@ export default function UrlBar() {
           </SelectContent>
         </Select>
 
-        <Input
-          type="text"
-          data-url-input
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="https://api.example.com/endpoint"
-          className="flex-1 font-mono"
-        />
+        <div className="flex-1 min-w-0">
+          <Input
+            type="text"
+            data-url-input
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="https://api.example.com/endpoint"
+            className="font-mono w-full"
+          />
+          {showPreview && (
+            <div className="text-xs text-muted-foreground mt-1.5 font-mono truncate">
+              → {interpolated}
+            </div>
+          )}
+        </div>
 
         <Button
           variant="outline"
@@ -109,11 +116,6 @@ export default function UrlBar() {
           {isLoading ? 'Sending…' : 'Send'}
         </Button>
       </div>
-      {showPreview && (
-        <div className="text-xs text-muted-foreground mt-1.5 font-mono pl-[180px] truncate">
-          → {interpolated}
-        </div>
-      )}
     </div>
   )
 }

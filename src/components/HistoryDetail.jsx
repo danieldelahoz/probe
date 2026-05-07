@@ -299,15 +299,16 @@ function maskValue(v) {
   return v.slice(0, 2) + '•'.repeat(Math.min(v.length - 4, 8)) + v.slice(-2)
 }
 
+const METHOD_COLORS = {
+  GET: 'text-green-700 dark:text-green-400',
+  POST: 'text-blue-700 dark:text-blue-400',
+  PUT: 'text-amber-700 dark:text-amber-400',
+  PATCH: 'text-amber-700 dark:text-amber-400',
+  DELETE: 'text-red-700 dark:text-red-400',
+}
+
 function methodColor(method) {
-  switch (method) {
-    case 'GET': return 'text-green-700 dark:text-green-400'
-    case 'POST': return 'text-blue-700 dark:text-blue-400'
-    case 'PUT': return 'text-amber-700 dark:text-amber-400'
-    case 'PATCH': return 'text-amber-700 dark:text-amber-400'
-    case 'DELETE': return 'text-red-700 dark:text-red-400'
-    default: return 'text-foreground'
-  }
+  return METHOD_COLORS[method] || 'text-foreground'
 }
 
 function statusKindClasses(status) {
@@ -325,15 +326,12 @@ function prettyJson(text) {
 }
 
 function formatTimestamp(iso) {
-  try {
-    const d = new Date(iso)
-    return d.toLocaleString(undefined, {
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    })
-  } catch {
-    return ''
-  }
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return ''
+  return d.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
 }
