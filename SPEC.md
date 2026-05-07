@@ -78,12 +78,14 @@ Persisted to localStorage under `probe.history`. Capped at 50 entries, newest fi
       durationMs,
       envName, // active env name at send time, or null
       snapshot: { method, url, params, headers, body, auth },
+      responseSnapshot, // present on success, body truncated to 100KB
+      errorSnapshot, // present on failure
     },
   ];
 }
 ```
 
-The full request snapshot is stored on each entry so clicking it repopulates the panel exactly as it was.
+The full request snapshot is stored on each entry so clicking it repopulates the panel exactly as it was. Response bodies are capped at 100KB so localStorage doesn't blow up on large responses.
 
 ### envStore: environments
 
@@ -153,7 +155,7 @@ Errors populate the `error` field instead:
 
 ```js
 {
-  type: 'cors' | 'network' | 'invalidUrl' | 'unresolvedVariable' | 'auth',
+  type: 'cors' | 'network' | 'timeout' | 'invalidUrl' | 'unresolvedVariable' | 'auth',
   message,
   hint,
   durationMs,
@@ -193,6 +195,7 @@ probe/
 │   │   ├── AuthEditor.jsx
 │   │   ├── BodyEditor.jsx
 │   │   ├── EnvironmentEditor.jsx
+│   │   ├── HistoryDetail.jsx
 │   │   ├── HistoryList.jsx
 │   │   ├── KeyValueEditor.jsx
 │   │   ├── RequestPanel.jsx
@@ -202,10 +205,14 @@ probe/
 │   ├── stores/
 │   │   ├── envStore.js
 │   │   ├── historyStore.js
-│   │   └── requestStore.js
+│   │   ├── requestStore.js
+│   │   └── themeStore.js
 │   ├── lib/
+│   │   ├── curlBuilder.js
+│   │   ├── headers.js
 │   │   ├── interpolate.js
 │   │   ├── storage.js
+│   │   ├── url.js
 │   │   └── utils.js
 │   ├── App.jsx
 │   ├── main.jsx
@@ -214,6 +221,8 @@ probe/
 ├── SPEC.md
 └── LICENSE
 ```
+
+Tests are colocated with their source files (e.g. `lib/interpolate.js` and `lib/interpolate.test.js`).
 
 ## Key dependencies
 
@@ -232,3 +241,7 @@ probe/
 - Originally planned to add a tooltip explaining the disabled X button on the last key/value row. Replaced with a clear-on-last-row behavior. Felt cleaner than a tooltip explaining why a button is disabled.
 - Added unresolved-variable detection late in the build after watching the browser silently resolve `{{baseUrl}}/get` as a relative URL against `localhost:5173`. Threw an explicit error instead.
 - History entries gained an `envName` field after shipping the first version. Without it, you couldn't tell which environment a past request was sent against.
+- Added "Copy as curl" mid-build. Pasting the curl into a terminal turned out to be the fastest way to share a failing request when asking for help.
+- Added a dark mode toggle with system preference detection. Wasn't in the original scope but felt wrong to ship a developer tool without it.
+- Added a 30s request timeout (10s for OAuth token requests) after a hung endpoint left the spinner running indefinitely. Surfaces as a `timeout` error type.
+- Refactored `lib/` mid-build: extracted `headers.js`, `url.js`, and `curlBuilder.js` out of `requestStore.js` so the pure helpers could be unit tested without spinning up the full store.
