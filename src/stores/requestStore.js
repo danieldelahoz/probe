@@ -248,7 +248,7 @@ useRequestStore.subscribe((state, prev) => {
   }
 })
 
-function classifyFetchError(err, durationMs) {
+export function classifyFetchError(err, durationMs) {
   if (err.name === 'AbortError') {
     return {
       type: 'timeout',
