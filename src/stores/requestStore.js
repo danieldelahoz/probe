@@ -4,6 +4,7 @@ import { loadJSON, saveJSON } from '@/lib/storage'
 import { getResolvedVars, useEnvStore } from '@/stores/envStore'
 import { useHistoryStore } from '@/stores/historyStore'
 import { interpolate } from '@/lib/interpolate'
+import { mergeHeaders, hasHeader } from '@/lib/headers'
 
 const PERSIST_KEY = 'oauth2-tokens'
 const URL_PERSIST_KEY = 'last-request'
@@ -281,28 +282,6 @@ function classifyFetchError(err, durationMs) {
   }
 }
 
-function mergeHeaders(authHeaders, userHeaders) {
-  const result = {}
-  const seenLower = new Map()
-
-  for (const [key, value] of Object.entries(authHeaders)) {
-    result[key] = value
-    seenLower.set(key.toLowerCase(), key)
-  }
-
-  for (const [key, value] of Object.entries(userHeaders)) {
-    const lower = key.toLowerCase()
-    if (seenLower.has(lower)) {
-      const existingKey = seenLower.get(lower)
-      delete result[existingKey]
-    }
-    result[key] = value
-    seenLower.set(lower, key)
-  }
-
-  return result
-}
-
 function truncateResponse(response) {
   if (!response) return null
   const truncated = response.body.length > MAX_HISTORY_BODY_BYTES
@@ -350,12 +329,9 @@ function buildBody(body, headers) {
   if (body.type === 'none' || !body.content.trim()) return null
 
   if (body.type === 'json') {
-    const hasContentType = Object.keys(headers).some(
-      (k) => k.toLowerCase() === 'content-type'
-    )
-    if (!hasContentType) {
+    if (!hasHeader(headers, 'content-type')) {
       headers['Content-Type'] = 'application/json'
-    }
+  }
     return body.content
   }
 

@@ -1,4 +1,5 @@
 import { interpolate } from '@/lib/interpolate'
+import { mergeHeaders, hasHeader } from '@/lib/headers'
 
 /**
  * Generate a curl command from a request configuration.
@@ -90,38 +91,13 @@ function buildAuthHeaders(auth) {
   return result
 }
 
-function mergeHeaders(authHeaders, userHeaders) {
-  const result = {}
-  const seenLower = new Map()
-
-  for (const [key, value] of Object.entries(authHeaders)) {
-    result[key] = value
-    seenLower.set(key.toLowerCase(), key)
-  }
-
-  for (const [key, value] of Object.entries(userHeaders)) {
-    const lower = key.toLowerCase()
-    if (seenLower.has(lower)) {
-      const existingKey = seenLower.get(lower)
-      delete result[existingKey]
-    }
-    result[key] = value
-    seenLower.set(lower, key)
-  }
-
-  return result
-}
-
 function buildBody(body, headers) {
   if (body.type === 'none' || !body.content.trim()) return null
 
   if (body.type === 'json') {
-    const hasContentType = Object.keys(headers).some(
-      (k) => k.toLowerCase() === 'content-type'
-    )
-    if (!hasContentType) {
-      headers['Content-Type'] = 'application/json'
-    }
+  if (!hasHeader(headers, 'content-type')) {
+    headers['Content-Type'] = 'application/json'
+  }
     return body.content
   }
 
