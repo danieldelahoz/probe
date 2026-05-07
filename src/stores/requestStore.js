@@ -5,6 +5,7 @@ import { getResolvedVars, useEnvStore } from '@/stores/envStore'
 import { useHistoryStore } from '@/stores/historyStore'
 import { interpolate } from '@/lib/interpolate'
 import { mergeHeaders, hasHeader } from '@/lib/headers'
+import { buildUrlWithParams } from '@/lib/url'
 
 const PERSIST_KEY = 'oauth2-tokens'
 const URL_PERSIST_KEY = 'last-request'
@@ -296,24 +297,6 @@ function truncateResponse(response) {
     contentType: response.contentType,
     durationMs: response.durationMs,
     sizeBytes: response.sizeBytes,
-  }
-}
-
-function buildUrlWithParams(url, params, auth) {
-  const enabledParams = params.filter((p) => p.enabled && p.key.trim())
-  const apiKeyAsQuery = auth?.type === 'apiKey' && auth.apiKey.location === 'query' && auth.apiKey.key
-    ? { key: auth.apiKey.key, value: auth.apiKey.value }
-    : null
-
-  if (enabledParams.length === 0 && !apiKeyAsQuery) return url
-
-  try {
-    const u = new URL(url)
-    enabledParams.forEach((p) => u.searchParams.append(p.key, p.value))
-    if (apiKeyAsQuery) u.searchParams.append(apiKeyAsQuery.key, apiKeyAsQuery.value)
-    return u.toString()
-  } catch {
-    return url
   }
 }
 

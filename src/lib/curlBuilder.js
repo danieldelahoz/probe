@@ -1,6 +1,6 @@
 import { interpolate } from '@/lib/interpolate'
 import { mergeHeaders, hasHeader } from '@/lib/headers'
-
+import { buildUrlWithParams } from '@/lib/url'
 /**
  * Generate a curl command from a request configuration.
  * Mirrors the same interpolation, header building, and auth logic used in the live send.
@@ -45,24 +45,6 @@ export function buildCurl({ method, url, params, headers, body, auth, vars = {} 
   }
 
   return lines.join(' \\\n')
-}
-
-function buildUrlWithParams(url, params, auth) {
-  const enabledParams = params.filter((p) => p.enabled && p.key.trim())
-  const apiKeyAsQuery = auth?.type === 'apiKey' && auth.apiKey.location === 'query' && auth.apiKey.key
-    ? { key: auth.apiKey.key, value: auth.apiKey.value }
-    : null
-
-  if (enabledParams.length === 0 && !apiKeyAsQuery) return url
-
-  try {
-    const u = new URL(url)
-    enabledParams.forEach((p) => u.searchParams.append(p.key, p.value))
-    if (apiKeyAsQuery) u.searchParams.append(apiKeyAsQuery.key, apiKeyAsQuery.value)
-    return u.toString()
-  } catch {
-    return url
-  }
 }
 
 function buildUserHeaders(headers) {
