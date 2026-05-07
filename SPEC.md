@@ -1,6 +1,6 @@
 # Probe Build Spec
 
-This is the spec I wrote before I started building. The shipped version mostly matches it. A few things changed along the way, and those are noted at the bottom.
+This is the spec I wrote before I started building. The shipped version mostly matches it. A few things changed along the way, noted at the bottom.
 
 ## Scope
 
@@ -26,7 +26,7 @@ V1 does not ship:
 
 ## State architecture
 
-Three Zustand stores, each with a single responsibility.
+Three Zustand stores, split by what they handle.
 
 ### requestStore: the active request
 
@@ -60,7 +60,7 @@ Three Zustand stores, each with a single responsibility.
 }
 ```
 
-All five auth configs are held at once, not just the active one. Switching between auth types preserves whatever was filled in.
+All five auth configs stay populated when you switch types.
 
 ### historyStore: request history
 
@@ -83,7 +83,7 @@ Persisted to localStorage under `probe.history`. Capped at 50 entries, newest fi
 }
 ```
 
-The full request snapshot is stored so an entry can repopulate the panel exactly.
+The full request snapshot is stored on each entry so clicking it repopulates the panel exactly as it was.
 
 ### envStore: environments
 
@@ -112,7 +112,7 @@ A single function in `lib/interpolate.js` takes a template string and a vars obj
 - Unknown variables stay literal. `{{missing}}` renders unchanged.
 - Resolves in URL, header values, param values, body content, and auth config values
 - Does not resolve in header keys or param keys (keys should be literal)
-- After interpolation, the URL is checked for any remaining `{{...}}` patterns. If found, the request is rejected with an `unresolvedVariable` error before the fetch fires. This catches the case where the browser would otherwise resolve a templated URL as a relative URL against the page origin.
+- After interpolation, the URL is checked for any remaining `{{...}}` patterns. If found, the request is rejected with an `unresolvedVariable` error before the fetch fires.
 
 ## Auth flows
 
@@ -125,7 +125,7 @@ A single function in `lib/interpolate.js` takes a template string and a vars obj
 - `location === 'header'`: adds header `{key}: {value}`
 - `location === 'query'`: appends `{key}={value}` to the URL's query string
 
-**OAuth 2.0 client credentials** is the centerpiece feature.
+**OAuth 2.0 client credentials**:
 
 1. On Send, check `cachedToken` and `expiresAt`
 2. If a token exists with more than 60 seconds left, reuse it
@@ -160,7 +160,7 @@ Errors populate the `error` field instead:
 }
 ```
 
-CORS detection is a string match on the fetch error message. `Failed to fetch` with a valid URL is almost always CORS in browsers. Imperfect, but it's the standard approach.
+CORS detection is a string match on the fetch error message. `Failed to fetch` with a valid URL is almost always CORS in browsers. Not perfect, but it's how everyone does it.
 
 ## Component tree
 
@@ -229,6 +229,6 @@ probe/
 
 - Tailwind v3 was the original plan. The new shadcn CLI generates Tailwind v4 code (oklch colors, `@theme inline`, `@import "tailwindcss"`). Migrated to v4 mid-build.
 - The radio component shadcn generated used `data-checked:` Tailwind variants, but `radix-ui` (the unified package) emits `data-state="checked"`. Patched the file to use `data-[state=checked]:` instead.
-- Originally planned to add a tooltip explaining the disabled X button on the last key/value row. Replaced with a clear-on-last-row behavior, which is better UX than a tooltip explaining a constraint.
-- Added unresolved-variable detection late in the build after watching the browser silently resolve `{{baseUrl}}/get` as a relative URL against `localhost:5173`. Surfacing it as an explicit error was the right fix.
+- Originally planned to add a tooltip explaining the disabled X button on the last key/value row. Replaced with a clear-on-last-row behavior. Felt cleaner than a tooltip explaining why a button is disabled.
+- Added unresolved-variable detection late in the build after watching the browser silently resolve `{{baseUrl}}/get` as a relative URL against `localhost:5173`. Threw an explicit error instead.
 - History entries gained an `envName` field after shipping the first version. Without it, you couldn't tell which environment a past request was sent against.
