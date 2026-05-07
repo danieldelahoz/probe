@@ -153,7 +153,7 @@ export const useRequestStore = create((set, get) => ({
 
     set({ isLoading: true, response: null, error: null })
 
-    let authHeaders = {}
+    let authHeaders
     try {
       authHeaders = await applyAuth(interpolatedAuth, (oauth2Update) => {
         set((s) => ({ auth: { ...s.auth, oauth2: { ...s.auth.oauth2, ...oauth2Update } } }))

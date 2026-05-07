@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useEnvStore } from '@/stores/envStore'
 import {
   Dialog,
@@ -24,11 +24,9 @@ export default function EnvironmentEditor({ open, onOpenChange }) {
 
   const [activeTabId, setActiveTabId] = useState(environments[0]?.id || null)
 
-  useEffect(() => {
-    if (!activeTabId && environments[0]) {
-      setActiveTabId(environments[0].id)
-    }
-  }, [environments, activeTabId])
+  if (!activeTabId && environments[0]) {
+    setActiveTabId(environments[0].id)
+  }
 
   const handleAddEnv = () => {
     const id = addEnvironment(`Environment ${environments.length + 1}`)

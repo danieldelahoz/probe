@@ -8,7 +8,7 @@ const ACTIVE_KEY = 'activeEnv'
 const persisted = loadJSON(PERSIST_KEY, { environments: [] })
 const persistedActiveId = loadJSON(ACTIVE_KEY, null)
 
-export const useEnvStore = create((set, get) => ({
+export const useEnvStore = create((set) => ({
   environments: persisted.environments || [],
   activeId: persistedActiveId,
 

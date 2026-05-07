@@ -274,7 +274,9 @@ function CopyablePre({ text }) {
       await navigator.clipboard.writeText(text)
       setCopied(true)
       setTimeout(() => setCopied(false), 1500)
-    } catch {}
+    } catch {
+      // not worth surfacing
+    }
   }
 
   return (

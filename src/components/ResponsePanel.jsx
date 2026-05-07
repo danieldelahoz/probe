@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRequestStore } from '@/stores/requestStore'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
 import { MagnifyingGlass, X } from '@phosphor-icons/react'
 
 export default function ResponsePanel() {
@@ -150,7 +149,7 @@ function highlightMatches(text, query) {
   const lowerQuery = query.toLowerCase()
   const result = []
   let lastIndex = 0
-  let pos = 0
+  let pos
 
   while ((pos = lowerText.indexOf(lowerQuery, lastIndex)) !== -1) {
     if (pos > lastIndex) {

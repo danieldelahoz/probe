@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { useRequestStore } from '@/stores/requestStore'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -184,6 +185,14 @@ function OAuth2Editor() {
 }
 
 function TokenStatus({ oauth2, onClear }) {
+  const [now, setNow] = useState(() => Date.now())
+
+  useEffect(() => {
+    if (!oauth2.cachedToken) return
+    const interval = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(interval)
+  }, [oauth2.cachedToken])
+
   if (!oauth2.cachedToken) {
     return (
       <div className="text-xs text-muted-foreground italic px-3 py-2 bg-muted/30 rounded">
@@ -192,12 +201,11 @@ function TokenStatus({ oauth2, onClear }) {
     )
   }
 
-  const now = Date.now()
   const expiresInMs = oauth2.expiresAt ? new Date(oauth2.expiresAt).getTime() - now : 0
   const isExpired = expiresInMs <= 0
   const isExpiring = expiresInMs > 0 && expiresInMs <= 60_000
 
-  let label = ''
+  let label
   if (isExpired) {
     label = 'Token expired, will refresh on send'
   } else {

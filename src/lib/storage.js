@@ -22,5 +22,7 @@ export function saveJSON(key, value) {
 export function removeKey(key) {
   try {
     localStorage.removeItem(PREFIX + key)
-  } catch {}
+  } catch {
+    // same as saveJSON
+  }
 }
