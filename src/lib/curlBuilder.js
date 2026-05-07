@@ -114,7 +114,7 @@ function interpolateAuth(auth, vars) {
  * The standard POSIX way: 'foo' followed by escaped quote followed by 'bar'.
  * Example: I'm → 'I'\''m'
  */
-function shellQuote(str) {
+export function shellQuote(str) {
   if (str === '' || str == null) return "''"
   return `'${str.replace(/'/g, `'\\''`)}'`
 }
