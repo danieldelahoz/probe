@@ -63,7 +63,7 @@ export default function UrlBar() {
     }
   }
 
-return (
+    return (
     <div>
       <div className="flex gap-2">
         <Button
@@ -117,5 +117,5 @@ return (
         </Button>
       </div>
     </div>
-  )
+    )
 }
