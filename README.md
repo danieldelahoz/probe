@@ -21,17 +21,19 @@ So I built one that just works.
 
 ## A note on secrets
 
-Probe stores environment variables, request history, and auth credentials in your browser's localStorage. This is fine for personal API testing — the data never leaves your browser, never touches a server, never gets sent anywhere except the API endpoints you're hitting.
+Probe stores environment variables, request history, and auth credentials in your browser's localStorage. This is fine for personal API testing. The data never leaves your browser, never touches a server, and never gets sent anywhere except the API endpoints you're hitting.
 
 It is **not** appropriate for storing production credentials or testing APIs you don't own. If you wouldn't paste it into a public Notion doc, don't store it in Probe.
 
-This is intentional. Adding encryption-at-rest in localStorage would provide false security — the encryption key would have to live in localStorage too. Anyone with access to your browser session has access to either form.
+This is intentional. Adding encryption-at-rest in localStorage would provide false security, since the encryption key would have to live in localStorage too. Anyone with access to your browser session has access to either form.
 
 For a tool intended for personal API exploration, plaintext storage with clear documentation is the honest tradeoff. For team use or production credentials, use a tool with proper secret management.
 
 ## Tech
 
-Vite, React 19, Tailwind 4, shadcn/ui (Lyra preset), Zustand, Monaco. Hosted on Cloudflare Pages.
+Vite, React 19, Tailwind 4, shadcn/ui (Lyra preset), Zustand, Monaco. Vitest for testing, GitHub Actions for CI. Hosted on Cloudflare Pages.
+
+See [SPEC.md](./SPEC.md) for design notes.
 
 ## Running locally
 
