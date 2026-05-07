@@ -8,6 +8,8 @@ import { interpolate } from '@/lib/interpolate'
 const PERSIST_KEY = 'oauth2-tokens'
 const URL_PERSIST_KEY = 'last-request'
 const MAX_HISTORY_BODY_BYTES = 100_000
+const REQUEST_TIMEOUT_MS = 30_000
+const TOKEN_REQUEST_TIMEOUT_MS = 10_000
 
 const emptyRow = () => ({ id: nanoid(), key: '', value: '', enabled: true })
 
@@ -145,20 +147,24 @@ export const useRequestStore = create((set, get) => ({
     }
 
     const finalUrl = buildUrlWithParams(interpolatedUrl, interpolatedParams, interpolatedAuth)
-    const finalHeaders = buildHeaders(interpolatedHeaders)
+    const userHeaders = buildHeaders(interpolatedHeaders)
 
     set({ isLoading: true, response: null, error: null })
 
+    let authHeaders = {}
     try {
-      await applyAuth(interpolatedAuth, finalHeaders, (oauth2Update) => {
+      authHeaders = await applyAuth(interpolatedAuth, (oauth2Update) => {
         set((s) => ({ auth: { ...s.auth, oauth2: { ...s.auth.oauth2, ...oauth2Update } } }))
       })
     } catch (err) {
+      const isTimeout = err.name === 'AbortError'
       set({
         error: {
           type: 'auth',
-          message: err.message,
-          hint: 'Check your auth config — token URL, credentials, or scope.',
+          message: isTimeout ? 'OAuth token request timed out after 10 seconds' : err.message,
+          hint: isTimeout
+            ? 'The token endpoint did not respond. Check the URL and your network.'
+            : 'Check your auth config — token URL, credentials, or scope.',
           durationMs: 0,
         },
         isLoading: false,
@@ -166,15 +172,23 @@ export const useRequestStore = create((set, get) => ({
       return
     }
 
-    const fetchOptions = { method, headers: finalHeaders }
+    const finalHeaders = mergeHeaders(authHeaders, userHeaders)
     const bodyContent = buildBody(interpolatedBody, finalHeaders)
+
+    const fetchOptions = { method, headers: finalHeaders }
     if (bodyContent !== null) {
       fetchOptions.body = bodyContent
     }
 
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+    fetchOptions.signal = controller.signal
+
     const t0 = performance.now()
     try {
       const res = await fetch(finalUrl, fetchOptions)
+      clearTimeout(timeoutId)
+
       const text = await res.text()
       const durationMs = Math.round(performance.now() - t0)
       const sizeBytes = new Blob([text]).size
@@ -204,17 +218,9 @@ export const useRequestStore = create((set, get) => ({
         responseSnapshot: truncateResponse(fullResponse),
       })
     } catch (err) {
+      clearTimeout(timeoutId)
       const durationMs = Math.round(performance.now() - t0)
-      const isCors = err.message.includes('Failed to fetch') || err.message.includes('NetworkError')
-
-      const errorInfo = {
-        type: isCors ? 'cors' : 'network',
-        message: err.message,
-        hint: isCors
-          ? "Likely CORS — the API didn't allow this origin. See the README for workarounds."
-          : 'Check the URL, your network connection, and the protocol (http/https).',
-        durationMs,
-      }
+      const errorInfo = classifyFetchError(err, durationMs)
 
       set({ error: errorInfo, isLoading: false })
 
@@ -239,6 +245,63 @@ useRequestStore.subscribe((state, prev) => {
     saveJSON(URL_PERSIST_KEY, { url: state.url, method: state.method })
   }
 })
+
+function classifyFetchError(err, durationMs) {
+  if (err.name === 'AbortError') {
+    return {
+      type: 'timeout',
+      message: `Request timed out after ${REQUEST_TIMEOUT_MS / 1000} seconds`,
+      hint: 'The endpoint did not respond. Check the URL, or it may be unresponsive.',
+      durationMs,
+    }
+  }
+
+  const msg = (err.message || '').toLowerCase()
+  const isLikelyCors =
+    err instanceof TypeError &&
+    (msg.includes('failed to fetch') ||
+     msg.includes('networkerror') ||
+     msg.includes('load failed') ||
+     msg.includes('cors'))
+
+  if (isLikelyCors) {
+    return {
+      type: 'cors',
+      message: err.message,
+      hint: "Often CORS — the API may not allow this origin. It could also be a network issue or DNS failure. See the README for workarounds.",
+      durationMs,
+    }
+  }
+
+  return {
+    type: 'network',
+    message: err.message || 'Network error',
+    hint: 'Check the URL, your network connection, and the protocol (http/https).',
+    durationMs,
+  }
+}
+
+function mergeHeaders(authHeaders, userHeaders) {
+  const result = {}
+  const seenLower = new Map()
+
+  for (const [key, value] of Object.entries(authHeaders)) {
+    result[key] = value
+    seenLower.set(key.toLowerCase(), key)
+  }
+
+  for (const [key, value] of Object.entries(userHeaders)) {
+    const lower = key.toLowerCase()
+    if (seenLower.has(lower)) {
+      const existingKey = seenLower.get(lower)
+      delete result[existingKey]
+    }
+    result[key] = value
+    seenLower.set(lower, key)
+  }
+
+  return result
+}
 
 function truncateResponse(response) {
   if (!response) return null
@@ -287,7 +350,10 @@ function buildBody(body, headers) {
   if (body.type === 'none' || !body.content.trim()) return null
 
   if (body.type === 'json') {
-    if (!headers['Content-Type'] && !headers['content-type']) {
+    const hasContentType = Object.keys(headers).some(
+      (k) => k.toLowerCase() === 'content-type'
+    )
+    if (!hasContentType) {
       headers['Content-Type'] = 'application/json'
     }
     return body.content
@@ -323,14 +389,16 @@ function interpolateAuth(auth, vars) {
   }
 }
 
-async function applyAuth(auth, headers, updateOauth2State) {
-  if (auth.type === 'none') return
+async function applyAuth(auth, updateOauth2State) {
+  const headers = {}
+
+  if (auth.type === 'none') return headers
 
   if (auth.type === 'bearer') {
     if (auth.bearer.token) {
       headers['Authorization'] = `Bearer ${auth.bearer.token}`
     }
-    return
+    return headers
   }
 
   if (auth.type === 'basic') {
@@ -339,23 +407,25 @@ async function applyAuth(auth, headers, updateOauth2State) {
       const encoded = btoa(`${username}:${password}`)
       headers['Authorization'] = `Basic ${encoded}`
     }
-    return
+    return headers
   }
 
   if (auth.type === 'apiKey') {
     const { key, value, location } = auth.apiKey
-    if (!key) return
+    if (!key) return headers
     if (location === 'header') {
       headers[key] = value
     }
-    return
+    return headers
   }
 
   if (auth.type === 'oauth2') {
     const token = await getOAuth2Token(auth.oauth2, updateOauth2State)
     headers['Authorization'] = `Bearer ${token}`
-    return
+    return headers
   }
+
+  return headers
 }
 
 async function getOAuth2Token(config, updateState) {
@@ -377,11 +447,20 @@ async function getOAuth2Token(config, updateState) {
   params.append('client_secret', clientSecret)
   if (scope) params.append('scope', scope)
 
-  const res = await fetch(tokenUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: params.toString(),
-  })
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), TOKEN_REQUEST_TIMEOUT_MS)
+
+  let res
+  try {
+    res = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString(),
+      signal: controller.signal,
+    })
+  } finally {
+    clearTimeout(timeoutId)
+  }
 
   if (!res.ok) {
     const text = await res.text()

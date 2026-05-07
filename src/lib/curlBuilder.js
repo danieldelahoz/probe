@@ -23,7 +23,10 @@ export function buildCurl({ method, url, params, headers, body, auth, vars = {} 
   const interpolatedAuth = interpolateAuth(auth, vars)
 
   const finalUrl = buildUrlWithParams(interpolatedUrl, interpolatedParams, interpolatedAuth)
-  const finalHeaders = buildHeaders(interpolatedHeaders, interpolatedAuth)
+
+  const userHeaders = buildUserHeaders(interpolatedHeaders)
+  const authHeaders = buildAuthHeaders(interpolatedAuth)
+  const finalHeaders = mergeHeaders(authHeaders, userHeaders)
 
   const lines = [`curl ${shellQuote(finalUrl)}`]
 
@@ -61,22 +64,49 @@ function buildUrlWithParams(url, params, auth) {
   }
 }
 
-function buildHeaders(headers, auth) {
+function buildUserHeaders(headers) {
   const result = {}
-
   headers
     .filter((h) => h.enabled && h.key.trim())
     .forEach((h) => { result[h.key] = h.value })
+  return result
+}
 
-  if (auth?.type === 'bearer' && auth.bearer.token) {
+function buildAuthHeaders(auth) {
+  const result = {}
+  if (!auth) return result
+
+  if (auth.type === 'bearer' && auth.bearer.token) {
     result['Authorization'] = `Bearer ${auth.bearer.token}`
-  } else if (auth?.type === 'basic' && (auth.basic.username || auth.basic.password)) {
+  } else if (auth.type === 'basic' && (auth.basic.username || auth.basic.password)) {
     const encoded = btoa(`${auth.basic.username}:${auth.basic.password}`)
     result['Authorization'] = `Basic ${encoded}`
-  } else if (auth?.type === 'apiKey' && auth.apiKey.location === 'header' && auth.apiKey.key) {
+  } else if (auth.type === 'apiKey' && auth.apiKey.location === 'header' && auth.apiKey.key) {
     result[auth.apiKey.key] = auth.apiKey.value
-  } else if (auth?.type === 'oauth2' && auth.oauth2.cachedToken) {
+  } else if (auth.type === 'oauth2' && auth.oauth2.cachedToken) {
     result['Authorization'] = `Bearer ${auth.oauth2.cachedToken}`
+  }
+
+  return result
+}
+
+function mergeHeaders(authHeaders, userHeaders) {
+  const result = {}
+  const seenLower = new Map()
+
+  for (const [key, value] of Object.entries(authHeaders)) {
+    result[key] = value
+    seenLower.set(key.toLowerCase(), key)
+  }
+
+  for (const [key, value] of Object.entries(userHeaders)) {
+    const lower = key.toLowerCase()
+    if (seenLower.has(lower)) {
+      const existingKey = seenLower.get(lower)
+      delete result[existingKey]
+    }
+    result[key] = value
+    seenLower.set(lower, key)
   }
 
   return result
@@ -86,7 +116,10 @@ function buildBody(body, headers) {
   if (body.type === 'none' || !body.content.trim()) return null
 
   if (body.type === 'json') {
-    if (!headers['Content-Type'] && !headers['content-type']) {
+    const hasContentType = Object.keys(headers).some(
+      (k) => k.toLowerCase() === 'content-type'
+    )
+    if (!hasContentType) {
       headers['Content-Type'] = 'application/json'
     }
     return body.content
