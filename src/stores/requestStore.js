@@ -166,7 +166,7 @@ export const useRequestStore = create((set, get) => ({
           message: isTimeout ? 'OAuth token request timed out after 10 seconds' : err.message,
           hint: isTimeout
             ? 'The token endpoint did not respond. Check the URL and your network.'
-            : 'Check your auth config — token URL, credentials, or scope.',
+            : 'Check your auth config, token URL, credentials, or scope.',
           durationMs: 0,
         },
         isLoading: false,
@@ -270,7 +270,7 @@ export function classifyFetchError(err, durationMs) {
     return {
       type: 'cors',
       message: err.message,
-      hint: "Often CORS — the API may not allow this origin. It could also be a network issue or DNS failure. See the README for workarounds.",
+      hint: "Often CORS, the API may not allow this origin. It could also be a network issue or DNS failure. See the README for workarounds.",
       durationMs,
     }
   }
@@ -423,7 +423,7 @@ async function getOAuth2Token(config, updateState) {
 
   if (!res.ok) {
     const text = await res.text()
-    throw new Error(`Token request failed: ${res.status} ${res.statusText} — ${text.slice(0, 200)}`)
+    throw new Error(`Token request failed: ${res.status} ${res.statusText} ; ${text.slice(0, 200)}`)
   }
 
   const data = await res.json()
