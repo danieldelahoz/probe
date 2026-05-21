@@ -15,9 +15,9 @@ Runs entirely in your browser. No account, no backend, no telemetry. Your data s
 
 ## Why I built it
 
-Spent 5 years doing enterprise SaaS support. I lived in Postman every day, and honestly got tired of API tools wanting me to log in or upgrade to a team plan just to test a few endpoints.
+Spent 3 years doing enterprise SaaS support for an AI Native Employee Experience Platform. I began using Postman frequently, and wanted to showcase my fluency with REST APIs.
 
-So I built my own, with help from Claude.
+So I built my own tool, with help from Claude.
 
 ## A note on secrets
 
